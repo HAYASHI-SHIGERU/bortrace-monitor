@@ -1,0 +1,37 @@
+name: Boatrace Monitor
+
+on:
+  schedule:
+    # 5分おきに実行 (JST考慮が必要だが、GitHub ActionsはUTC)
+    # CronはUTC基準。日本時間はUTC+9。
+    # 頻繁に実行するため */5 で設定。
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    # タイムゾーン設定 (JSTでDate取得するため)
+    env:
+      TZ: 'Asia/Tokyo'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 pandas
+
+    - name: Run Monitor
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      run: |
+        python scripts/check_races_batch.py
