@@ -8,18 +8,18 @@ workflow_dispatch:
 jobs:
 check:
 runs-on: ubuntu-latest
-steps:
-- name: Checkout repository
-uses: actions/checkout@v3
 
 ```
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v3
+
   - name: Run monitor script
-    run: |
-      python3 monitor.py
+    run: python3 monitor.py
 
   - name: Send to Discord
     run: |
       curl -H "Content-Type: application/json" \
-      -d "{\"content\": \"チェック完了\"}" \
-      ${{ secrets.DISCORD_WEBHOOK_URL }}
+           -d "{\"content\": \"チェック完了\"}" \
+           ${{ secrets.DISCORD_WEBHOOK_URL }}
 ```
