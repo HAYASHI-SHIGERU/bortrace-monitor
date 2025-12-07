@@ -13,11 +13,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
       - name: Run monitor script
         run: python3 monitor.py
 
       - name: Send to Discord
         run: |
           curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"チェック完了\"}" \
-               ${{ secrets.DISCORD_WEBHOOK_URL }}
+            -d "{\"content\": \"チェック完了\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
