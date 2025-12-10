@@ -18,7 +18,7 @@ import sys
 # ※ 正確に「3分前」ピンポイントではないが、許容範囲とする。
 
 MIN_OFFSET = 3
-MAX_OFFSET = 8
+MAX_OFFSET = 18
 
 def check_and_notify():
     # 環境変数からWebhook URLを取得 (GitHub Secrets対応)
