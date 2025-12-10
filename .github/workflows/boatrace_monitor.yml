@@ -1,12 +1,7 @@
 name: Boatrace Monitor
 
 on:
-  schedule:
-    # 5分おきに実行 (JST考慮が必要だが、GitHub ActionsはUTC)
-    # CronはUTC基準。日本時間はUTC+9。
-    # 頻繁に実行するため */5 で設定。
-    - cron: '*/5 * * * *'
-  workflow_dispatch: # 手動実行用
+  workflow_dispatch: # 手動実行 & GASトリガー用
 
 jobs:
   monitor:
