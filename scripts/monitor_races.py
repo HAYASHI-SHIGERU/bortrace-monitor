@@ -5,6 +5,11 @@ from race_notifier import RaceNotifier
 
 class RaceMonitor:
     """
+    [LEGACY] PCローカル実行用クラス
+    
+    ※ 現在は GitHub Actions + GAS による自動実行 (check_races_batch.py) がメインです。
+    このスクリプトは、PCを常時起動させて手元で動かす場合や、テスト目的でのみ使用してください。
+    
     レーススケジュールを管理し、指定時間の前に通知を行うクラス
     """
     def __init__(self):

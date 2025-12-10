@@ -9,6 +9,9 @@ except ImportError:
 class RaceNotifier:
     """
     通知を行うクラス (Mac Desktop / Discord Webhook)
+    
+    本番運用(GitHub Actions)では Discord Webhook が使用されます。
+    ローカルでテスト実行する場合や、DISCORD_WEBHOOK_URLがない場合は Mac通知 が使用されます。
     """
     def __init__(self):
         self.notificationTitle = "競艇レース通知"
