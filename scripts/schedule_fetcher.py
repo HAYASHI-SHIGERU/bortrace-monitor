@@ -192,6 +192,91 @@ class ScheduleFetcher:
         return scheduleList
 
 
+    def check1stBoatPopularity(self, jcd, raceNo, dateStr=None):
+        """
+        指定レースの単勝オッズを取得し、1号艇が一番人気(オッズ最小)か判定する
+        
+        Returns:
+            bool: 1号艇が一番人気ならTrue
+            None: データ取得失敗時など
+        """
+        if dateStr is None:
+            dateStr = datetime.datetime.now().strftime('%Y%m%d')
+            
+        url = f"{self.baseUrl}/oddstf?jcd={jcd}&race={raceNo}&hd={dateStr}"
+        
+        resp = self._fetchWithRetry(url)
+        if not resp:
+            return None
+            
+        try:
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            
+            # 単勝オッズが含まれるテーブルを探す
+            # ボートレース公式サイトの構造: 
+            # <table class="is-w495">...<thead>...<th>単勝</th>...
+            
+            odds_map = {} # {boatNo: odds}
+            
+            # 全テーブル走査
+            tables = soup.find_all('table')
+            for table in tables:
+                # 明確に「単勝」ヘッダーを持つテーブルを対象にする
+                if "単勝" not in table.get_text():
+                    continue
+
+                # 行データを解析
+                rows = table.find_all('tr')
+                for row in rows:
+                    # 構造: 
+                    # <td class="is-boatColor1 is-fs14"><span ...>1</span></td>
+                    # <td class="is-p10-0"><span class="is-fs14">1.5</span></td>
+                    
+                    # 艇番の取得
+                    boat_td = row.find('td', class_=lambda x: x and 'is-boatColor' in x)
+                    if not boat_td:
+                        continue
+                        
+                    try:
+                        boatNo = int(boat_td.get_text(strip=True))
+                        
+                        # オッズの取得（この行の次のtd、または特定のクラスを持つtd）
+                        # 艇番tdの次のtdがオッズであることが多い
+                        odds_td = boat_td.find_next_sibling('td')
+                        if odds_td:
+                            odds_text = odds_td.get_text(strip=True)
+                            if odds_text and odds_text.replace('.', '').isdigit():
+                                odds_map[boatNo] = float(odds_text)
+                    except ValueError:
+                        continue
+                
+                # 単勝データが取れたらループ終了
+                if odds_map:
+                    break
+            
+            if odds_map:
+                # オッズでソート (昇順)
+                sorted_odds = sorted(odds_map.items(), key=lambda x: x[1])
+                
+                # 一番人気の艇番とオッズ
+                favorite_boat = sorted_odds[0][0]
+                favorite_odds = sorted_odds[0][1]
+                
+                # 同率1位の可能性があるため、複数の場合を考慮してもよいが
+                # 「1号艇が一番人気（単独または同率）」であれば条件OKとする
+                
+                # 1号艇のオッズが一番人気のオッズと同じならTrue
+                is_favorite = (odds_map.get(1) == favorite_odds)
+                
+                return is_favorite
+            
+            return None
+
+        except Exception as e:
+            print(f"Error parsing odds: {e}")
+            return None
+
+
 if __name__ == "__main__":
     # テスト実行
     fetcher = ScheduleFetcher()

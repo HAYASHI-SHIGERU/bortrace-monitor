@@ -49,10 +49,30 @@ def check_and_notify():
         
         # チェック範囲に入っているか
         if MIN_OFFSET <= minutes_left < MAX_OFFSET:
-            print(f"Match: {race['stadium']} {race['raceNo']}R (Remaining: {minutes_left:.1f} min)")
+            print(f"Match time: {race['stadium']} {race['raceNo']}R (Remaining: {minutes_left:.1f} min)")
             
-            msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)"
-            title = f"⏳ もうすぐ締切 ({int(minutes_left)}分前)"
+            # オッズチェック (1号艇が1番人気か)
+            jcd = race.get('jcd')
+            raceNo = race.get('raceNo')
+            
+            # 日付またぎ対応 (念のため)
+            race_date = deadline_dt.strftime('%Y%m%d')
+            
+            print(f"  Checking odds for {race['stadium']} {raceNo}R...")
+            is_favorite = fetcher.check1stBoatPopularity(jcd, raceNo, race_date)
+            
+            if is_favorite is None:
+                print(f"  -> Failed to fetch odds. Skipping.")
+                continue
+                
+            if not is_favorite:
+                print(f"  -> Skipped: 1st boat is NOT the favorite.")
+                continue
+            
+            print(f"  -> Good! 1st boat IS the favorite. Sending notification.")
+            
+            msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)\n✨ 1号艇1番人気鉄板レース予報 ✨"
+            title = f"🔥 激熱レース ({int(minutes_left)}分前)"
             
             success = notifier.sendNotification(msg, title)
             if success:
