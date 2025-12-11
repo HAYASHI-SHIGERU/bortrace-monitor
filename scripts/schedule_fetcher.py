@@ -203,7 +203,7 @@ class ScheduleFetcher:
         if dateStr is None:
             dateStr = datetime.datetime.now().strftime('%Y%m%d')
             
-        url = f"{self.baseUrl}/oddstf?jcd={jcd}&race={raceNo}&hd={dateStr}"
+        url = f"{self.baseUrl}/oddstf?jcd={jcd}&rno={raceNo}&hd={dateStr}"
         
         resp = self._fetchWithRetry(url)
         if not resp:
@@ -220,11 +220,14 @@ class ScheduleFetcher:
             
             # 全テーブル走査
             tables = soup.find_all('table')
+            found_tansho_table = False
+            
             for table in tables:
                 # 明確に「単勝」ヘッダーを持つテーブルを対象にする
                 if "単勝" not in table.get_text():
                     continue
 
+                found_tansho_table = True
                 # 行データを解析
                 rows = table.find_all('tr')
                 for row in rows:
@@ -240,13 +243,21 @@ class ScheduleFetcher:
                     try:
                         boatNo = int(boat_td.get_text(strip=True))
                         
-                        # オッズの取得（この行の次のtd、または特定のクラスを持つtd）
-                        # 艇番tdの次のtdがオッズであることが多い
-                        odds_td = boat_td.find_next_sibling('td')
-                        if odds_td:
-                            odds_text = odds_td.get_text(strip=True)
-                            if odds_text and odds_text.replace('.', '').isdigit():
-                                odds_map[boatNo] = float(odds_text)
+                        # オッズの取得
+                        # 構造: [艇番TD] -> [レーサー名TD] -> [オッズTD]
+                        # find_next_sibling() 1回だとレーサー名になるので、もう一度呼ぶか、クラスで探す
+                        
+                        racer_td = boat_td.find_next_sibling('td')
+                        if racer_td:
+                            odds_td = racer_td.find_next_sibling('td')
+                            
+                            if odds_td:
+                                odds_text = odds_td.get_text(strip=True)
+                                if odds_text and odds_text.replace('.', '').isdigit():
+                                    val = float(odds_text)
+                                    # 0.0倍は欠場や投票なしの可能性があるため除外 (最小値判定で誤検知しないように)
+                                    if val > 0:
+                                        odds_map[boatNo] = val
                     except ValueError:
                         continue
                 
