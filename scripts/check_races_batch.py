@@ -41,6 +41,16 @@ def check_and_notify():
     
     notify_count = 0
     
+
+    # ディレクトリ作成 (念のため)
+    os.makedirs('logs', exist_ok=True)
+    log_file = 'logs/notification_history.csv'
+    
+    # CSVヘッダー書き込み (ファイルが存在しない場合のみ)
+    if not os.path.exists(log_file):
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write('ActionTime,RaceDate,Stadium,RaceNo,DeadlineTime,MinutesLeft\n')
+
     for race in schedules:
         deadline_dt = race['deadlineDatetime']
         time_diff = deadline_dt - now
@@ -76,6 +86,17 @@ def check_and_notify():
             success = notifier.sendNotification(msg, title)
             if success:
                 notify_count += 1
+                
+                # ログ保存
+                try:
+                    with open(log_file, 'a', encoding='utf-8') as f:
+                        # ActionTime, RaceDate, Stadium, RaceNo, DeadlineTime, MinutesLeft
+                        action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        log_line = f"{action_time},{race_date},{race['stadium']},{raceNo},{race['deadlineTime']},{minutes_left:.1f}\n"
+                        f.write(log_line)
+                    print(f"  -> Log saved to {log_file}")
+                except Exception as e:
+                    print(f"  -> Failed to save log: {e}")
     
     print(f"Done. Sent {notify_count} notifications.")
 
