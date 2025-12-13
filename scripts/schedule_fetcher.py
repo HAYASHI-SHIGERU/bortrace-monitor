@@ -8,6 +8,15 @@ class ScheduleFetcher:
     """
     ボートレース公式サイトから当日のレーススケジュールを取得するクラス
     """
+    # レース場コード(JCD)と名称のマッピング
+    STADIUM_MAP = {
+        '01': '桐生', '02': '戸田', '03': '江戸川', '04': '平和島', '05': '多摩川',
+        '06': '浜名湖', '07': '蒲郡', '08': '常滑', '09': '津', '10': '三国',
+        '11': 'びわこ', '12': '住之江', '13': '尼崎', '14': '鳴門', '15': '丸亀',
+        '16': '児島', '17': '宮島', '18': '徳山', '19': '下関', '20': '若松',
+        '21': '芦屋', '22': '福岡', '23': '唐津', '24': '大村'
+    }
+
     def __init__(self):
         # アクセス先ドメイン
         self.baseUrl = "https://www.boatrace.jp/owpc/pc/race"
@@ -109,15 +118,8 @@ class ScheduleFetcher:
                         jcd = params.get('jcd')
                         
                         if jcd and jcd not in uniqueJcds:
-                            # レース場名を画像altなどから取得を試みる
-                            name = "不明"
-                            img = a.find('img')
-                            if img and img.get('alt'):
-                                name = img.get('alt').replace('>', '') # 余計な記号除去
-                            else:
-                                text = a.get_text(strip=True)
-                                if text:
-                                    name = text
+                            # レース場名をマッピングから取得
+                            name = self.STADIUM_MAP.get(jcd, "不明")
                             
                             stadiums.append({'jcd': jcd, 'name': name})
                             uniqueJcds.add(jcd)
