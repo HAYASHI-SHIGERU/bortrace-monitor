@@ -48,7 +48,7 @@ def check_and_notify():
     # CSVヘッダー書き込み (ファイルが存在しない場合のみ)
     if not os.path.exists(log_file):
         with open(log_file, 'w', encoding='utf-8') as f:
-            f.write('ActionTime,RaceDate,Stadium,RaceNo,DeadlineTime,MinutesLeft\n')
+            f.write('ActionTime,RaceDate,STADIUM_code,Stadium_name,RaceNo,DeadlineTime,MinutesLeft\n')
 
     # スプレッドシート設定読み込み
     google_creds_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -76,7 +76,7 @@ def check_and_notify():
             
             # ヘッダーチェック (A1セルが空なら書き込む)
             if not target_sheet.cell(1, 1).value:
-                target_sheet.append_row(['ActionTime', 'RaceDate', 'Stadium', 'RaceNo', 'DeadlineTime', 'MinutesLeft'])
+                target_sheet.append_row(['ActionTime', 'RaceDate', 'STADIUM_code', 'Stadium_name', 'RaceNo', 'DeadlineTime', 'MinutesLeft'])
                 
         except Exception as e:
             print(f"Warning: Failed to connect to Google Sheets: {e}")
@@ -143,9 +143,9 @@ def check_and_notify():
             # ローカルCSVログ保存
             try:
                 with open(log_file, 'a', encoding='utf-8') as f:
-                    # ActionTime, RaceDate, Stadium, RaceNo, DeadlineTime, MinutesLeft
+                    # ActionTime, RaceDate, STADIUM_code, Stadium_name, RaceNo, DeadlineTime, MinutesLeft
                     action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    log_line = f"{action_time},{race_date},{race['stadium']},{raceNo},{race['deadlineTime']},{minutes_left:.1f}\n"
+                    log_line = f"{action_time},{race_date},{race['jcd']},{race['stadium']},{raceNo},{race['deadlineTime']},{minutes_left:.1f}\n"
                     f.write(log_line)
                 print(f"  -> Log saved to {log_file}")
             except Exception as e:
@@ -155,7 +155,7 @@ def check_and_notify():
             if target_sheet:
                 try:
                     action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    row_data = [action_time, race_date, race['stadium'], raceNo, race['deadlineTime'], f"{minutes_left:.1f}"]
+                    row_data = [action_time, race_date, race['jcd'], race['stadium'], raceNo, race['deadlineTime'], f"{minutes_left:.1f}"]
                     target_sheet.append_row(row_data)
                     print(f"  -> Log saved to Google Sheet")
                 except Exception as e:
