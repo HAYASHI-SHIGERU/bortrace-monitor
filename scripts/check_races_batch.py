@@ -81,6 +81,9 @@ def check_and_notify():
         except Exception as e:
             print(f"Warning: Failed to connect to Google Sheets: {e}")
 
+    # 通知対象レースを収集するリスト
+    races_to_notify = []
+    
     for race in schedules:
         deadline_dt = race['deadlineDatetime']
         time_diff = deadline_dt - now
@@ -108,35 +111,55 @@ def check_and_notify():
                 print(f"  -> Skipped: 1st boat is NOT the favorite.")
                 continue
             
-            print(f"  -> Good! 1st boat IS the favorite. Sending notification.")
+            print(f"  -> Good! 1st boat IS the favorite. Adding to notification queue.")
             
-            msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)\n✨ 1号艇1番人気鉄板レース予報 ✨"
-            title = f"🔥 激熱レース ({int(minutes_left)}分前)"
+            # 通知対象レースとして保存
+            races_to_notify.append({
+                'race': race,
+                'minutes_left': minutes_left,
+                'race_date': race_date
+            })
+    
+    # 残り時間の短い順にソート
+    races_to_notify.sort(key=lambda x: x['minutes_left'])
+    
+    # ソートされた順に通知を送信
+    for race_info in races_to_notify:
+        race = race_info['race']
+        minutes_left = race_info['minutes_left']
+        race_date = race_info['race_date']
+        raceNo = race.get('raceNo')
+        
+        # 出走表URLを生成
+        race_url = f"https://www.boatrace.jp/owpc/pc/race/racelist?rno={raceNo}&jcd={race['jcd']:02d}&hd={race_date}"
+        
+        msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)\n✨ 1号艇1番人気鉄板レース予報 ✨\n{race_url}"
+        title = f"🔥 激熱レース ({int(minutes_left)}分前)"
+        
+        success = notifier.sendNotification(msg, title)
+        if success:
+            notify_count += 1
             
-            success = notifier.sendNotification(msg, title)
-            if success:
-                notify_count += 1
-                
-                # ローカルCSVログ保存
+            # ローカルCSVログ保存
+            try:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    # ActionTime, RaceDate, Stadium, RaceNo, DeadlineTime, MinutesLeft
+                    action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    log_line = f"{action_time},{race_date},{race['stadium']},{raceNo},{race['deadlineTime']},{minutes_left:.1f}\n"
+                    f.write(log_line)
+                print(f"  -> Log saved to {log_file}")
+            except Exception as e:
+                print(f"  -> Failed to save log: {e}")
+            
+            # スプレッドシートログ保存
+            if target_sheet:
                 try:
-                    with open(log_file, 'a', encoding='utf-8') as f:
-                        # ActionTime, RaceDate, Stadium, RaceNo, DeadlineTime, MinutesLeft
-                        action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        log_line = f"{action_time},{race_date},{race['stadium']},{raceNo},{race['deadlineTime']},{minutes_left:.1f}\n"
-                        f.write(log_line)
-                    print(f"  -> Log saved to {log_file}")
+                    action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    row_data = [action_time, race_date, race['stadium'], raceNo, race['deadlineTime'], f"{minutes_left:.1f}"]
+                    target_sheet.append_row(row_data)
+                    print(f"  -> Log saved to Google Sheet")
                 except Exception as e:
-                    print(f"  -> Failed to save log: {e}")
-                
-                # スプレッドシートログ保存
-                if target_sheet:
-                    try:
-                        action_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        row_data = [action_time, race_date, race['stadium'], raceNo, race['deadlineTime'], f"{minutes_left:.1f}"]
-                        target_sheet.append_row(row_data)
-                        print(f"  -> Log saved to Google Sheet")
-                    except Exception as e:
-                        print(f"  -> Failed to save to Google Sheet: {e}")
+                    print(f"  -> Failed to save to Google Sheet: {e}")
     
     print(f"Done. Sent {notify_count} notifications.")
 
