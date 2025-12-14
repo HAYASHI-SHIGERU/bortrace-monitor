@@ -57,12 +57,12 @@ sequenceDiagram
             Fetcher->>Web: 直前オッズ取得
             Web-->>Fetcher: オッズデータ
             
-            alt 1号艇が単勝1番人気
-                Fetcher-->>Main: True
-                Main->>Notifier: sendNotification()
-                Notifier->>Discord: 激熱レース通知送信
-            else 1号艇が不人気
+            alt 1号艇が単勝1番人気でない
                 Fetcher-->>Main: False
+                Main->>Notifier: sendNotification()
+                Notifier->>Discord: 波乱レース通知送信
+            else 1号艇が1番人気
+                Fetcher-->>Main: True
                 Note over Main: 通知スキップ
             end
         else 対象外の時間
