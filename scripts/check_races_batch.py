@@ -93,7 +93,7 @@ def check_and_notify():
         if MIN_OFFSET <= minutes_left < MAX_OFFSET:
             print(f"Match time: {race['stadium']} {race['raceNo']}R (Remaining: {minutes_left:.1f} min)")
             
-            # オッズチェック (1号艇が1番人気か)
+            # オッズチェック (1号艇が1番人気でないか)
             jcd = race.get('jcd')
             raceNo = race.get('raceNo')
             
@@ -107,11 +107,11 @@ def check_and_notify():
                 print(f"  -> Failed to fetch odds. Skipping.")
                 continue
                 
-            if not is_favorite:
-                print(f"  -> Skipped: 1st boat is NOT the favorite.")
+            if is_favorite:
+                print(f"  -> Skipped: 1st boat IS the favorite.")
                 continue
             
-            print(f"  -> Good! 1st boat IS the favorite. Adding to notification queue.")
+            print(f"  -> Good! 1st boat is NOT the favorite. Adding to notification queue.")
             
             # 通知対象レースとして保存
             races_to_notify.append({
@@ -133,8 +133,8 @@ def check_and_notify():
         # 出走表URLを生成
         race_url = f"https://www.boatrace.jp/owpc/pc/race/racelist?rno={raceNo}&jcd={int(race['jcd']):02d}&hd={race_date}"
         
-        msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)\n✨ 1号艇1番人気鉄板レース予報 ✨\n{race_url}"
-        title = f"🔥 激熱レース ({int(minutes_left)}分前)"
+        msg = f"{race['stadium']} {race['raceNo']}R\n締切: {race['deadlineTime']} (残り約{int(minutes_left)}分)\n🌊 波乱レース予報（1号艇が1番人気以外）🌊\n{race_url}"
+        title = f"⚡ 波乱レース ({int(minutes_left)}分前)"
         
         success = notifier.sendNotification(msg, title)
         if success:
